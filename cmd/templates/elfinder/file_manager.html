@@ -1,0 +1,155 @@
+<html>
+<head>
+    <title>Jumpserver File Manager</title>
+    <link rel="shortcut icon" href="/koko/static/img/favicon.ico" type="image/x-icon">
+</head>
+<body style="margin: 0">
+    <script type="text/javascript" src="/koko/static/js/jquery-3.3.1.js"></script>
+    <script type="text/javascript" src="/koko/static/js/jquery-ui-1.12.1.js"></script>
+    <script type="text/javascript" src="/koko/static/js/neffos.min.js"></script>
+    <script type="text/javascript" src="/koko/static/plugins/elfinder/elfinder.full.js"></script>
+    <script type="text/javascript" src="/koko/static/plugins/elfinder/i18n/elfinder.pl.js"></script>
+    <link rel="stylesheet" type="text/css" media="screen" href="/koko/static/js/jquery-ui-1.12.1.min.css">
+    <link rel="stylesheet" type="text/css" media="screen" href="/koko/static/plugins/elfinder/css/elfinder.full.css">
+    <link rel="stylesheet" type="text/css" media="screen" href="/koko/static/plugins/elfinder/css/theme-gray.css">
+    <script type="text/javascript" charset="utf-8">
+        var scheme = document.location.protocol == "https:" ? "wss" : "ws";
+        var port = document.location.port ? ":" + document.location.port : "";
+        var wsURL = scheme + "://" + document.location.hostname + port + "/koko/ws/";
+        let interval;
+        dial(wsURL, {
+            "elfinder": {
+                _OnNamespaceConnected: function (nsConn, msg) {
+                    interval = setInterval(() => nsConn.emit('ping', ''), 10000);
+                },
+                _OnNamespaceDisconnect: function (ns, msg) {
+                    if (interval) {
+                        clearInterval(interval);
+                    }
+                },
+                data: function (nsConn, msg) {
+                    var data = msg.unmarshal();
+                    var sid = data.sid;
+                    initElfinder(sid);
+                }
+            }
+        }).then(conn => {
+            conn.connect("elfinder");
+        });
+
+        // var socket = io.connect('/elfinder');
+        // socket.on('connect', function () {
+        //     console.log("Connect websocket done")
+        // });
+        // socket.on('data', function (msg) {
+        //     var sid = msg.sid;
+        //     initElfinder(sid);
+        // });
+        function initElfinder(sid) {
+            var elf;
+            var opts = {
+	    		uiOptions : {
+	    			toolbar: [
+                        ['back', 'forward'],
+                        ['mkdir', 'mkfile'],
+                        ['copy', 'cut', 'paste'],
+                        ['rm'],
+                        ['rename'],
+                        ['view'],
+                        {{if eq . "_"}}
+                        ['search']
+                        {{end}}
+                    ],
+                    cwd : {oldSchool: true}
+	    		},
+                customData: {'sid': sid},
+                width: '100%',
+	    		url: '/koko/elfinder/sftp/connector/{{.}}/',
+                resizable: false,
+                lang: 'pl',
+                requestType: 'get',
+                contextmenu: {
+                    navbar: [
+                        'rm'
+                    ],
+                    cwd: [
+                        'reload', 'back', 'up', '|', 'mkdir', 'mkfile', '|',
+                        'upload', 'paste'
+                    ],
+                    files: [
+                        'rm', 'rename', 'download', 'copy', 'cut', 'paste'
+                    ]
+                },
+                rememberLastDir: false,
+                placesFirst: false,
+                reloadClearHistory: true
+	    	};
+	    	var start = function(lng) {
+	    		$(function() {
+	    			// Make elFinder (REQUIRED)
+                    opts.lang = lng;
+	    			elf = $('#elfinder').elfinder(opts).elfinder('instance');
+                    $(window).trigger('resize');
+	    		});
+	    	};
+	    	var load = function () {
+                var loct = window.location.search;
+		        var full_lng, locm, lng;
+     		    if (loct && (locm = loct.match(/lang=([a-zA-Z_-]+)/))) {
+          		    full_lng = locm[1];
+          	    } else {
+          	    	full_lng = (navigator.browserLanguage || navigator.language || navigator.userLanguage);
+          	    }
+          	    lng = full_lng.substr(0,2);
+          	    if (lng === 'ja') {
+                    lng = 'jp';
+                }
+          	    else if (lng === 'pt') {
+          	        lng = 'pt_BR';
+                }
+          	    else if (lng === 'zh') {
+          	        lng = (full_lng.substr(0,5) == 'zh-tw')? 'zh_TW' : 'zh_CN';
+                }
+                if (lng !== 'en') {
+        		    $.ajax({
+        		    	url : '/koko/static/plugins/elfinder/i18n'+'/elfinder.'+lng+'.js',
+        		    	cache : true,
+        		    	dataType : 'script'
+        		    })
+        		    .done(function() {
+        		    	start(lng);
+        		    })
+        		    .fail(function() {
+        		    	start('en');
+        		    });
+	           } else {
+	           	    start(lng);
+	           }
+            };
+	    	load();
+            var resizeTimer;
+            $(window).resize(function () {
+                resizeTimer && clearTimeout(resizeTimer);
+                if (!$('#elfinder').hasClass('elfinder-fullscreen')) {
+                    resizeTimer = setTimeout(function () {
+                        var h, w;
+                        if (window !== parent) {
+                            h = parseInt(parent.$('.window.active').height());
+                            w = parseInt(parent.$('.window.active').width());
+                        } else {
+                            h = parseInt($(window).height());
+                            w = parseInt($(window).width());
+                        }
+                        var ori_h = parseInt($('#elfinder').height());
+                        var ori_w = parseInt($('#elfinder').width());
+                        if (h !== ori_h || w !== ori_w){
+                            elf.resize(w, h);
+                        }
+                    }, 200);
+                }
+            });
+        }
+    </script>
+<div id="elfinder"></div>
+</body>
+</html>
