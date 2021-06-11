@@ -3,13 +3,124 @@ package proxy
 import (
 	"bytes"
 	"fmt"
+	"github.com/gliderlabs/ssh"
+	"github.com/go-gomail/gomail"
+	"github.com/jumpserver/koko/pkg/config"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/utils"
 )
+
+
+type EmailParam struct {
+	// ServerHost 邮箱服务器地址，如腾讯企业邮箱为smtp.exmail.qq.com
+	ServerHost string
+	// ServerPort 邮箱服务器端口，如腾讯企业邮箱为465
+	ServerPort int
+	// FromEmail　发件人邮箱地址
+	FromEmail string
+	// FromPasswd 发件人邮箱密码（注意，这里是明文形式），TODO：如果设置成密文？
+	FromPasswd string
+	// Toers 接收者邮件，如有多个，则以英文逗号(“,”)隔开，不能为空
+	Toers string
+	// CCers 抄送者邮件，如有多个，则以英文逗号(“,”)隔开，可以为空
+	CCers string
+}
+
+// 全局变量，因为发件人账号、密码，需要在发送时才指定
+// 注意，由于是小写，外面的包无法使用
+var serverHost, fromEmail, fromPasswd string
+var serverPort int
+
+var m *gomail.Message
+
+func InitEmail(ep *EmailParam) {
+	toers := []string{}
+
+	serverHost = ep.ServerHost
+	serverPort = ep.ServerPort
+	fromEmail = ep.FromEmail
+	fromPasswd = ep.FromPasswd
+
+	m = gomail.NewMessage()
+
+	if len(ep.Toers) == 0 {
+		return
+	}
+
+	for _, tmp := range strings.Split(ep.Toers, ",") {
+		toers = append(toers, strings.TrimSpace(tmp))
+	}
+
+	// 收件人可以有多个，故用此方式
+	m.SetHeader("To", toers...)
+
+	//抄送列表
+	if len(ep.CCers) != 0 {
+		for _, tmp := range strings.Split(ep.CCers, ",") {
+			toers = append(toers, strings.TrimSpace(tmp))
+		}
+		m.SetHeader("Cc", toers...)
+	}
+
+	// 发件人
+	// 第三个参数为发件人别名，如"李大锤"，可以为空（此时则为邮箱名称）
+	m.SetAddressHeader("From", fromEmail, "")
+}
+
+// SendEmail body支持html格式字符串
+func SendEmail(command string) {
+
+	cf := config.GetConf()
+	registorhostname := cf.Name
+
+	username := ""
+	timeStr:=time.Now().Format("2006-01-02 15:04:05")
+	subject := "高危命令告警"
+	body :=  "用户[" + username + "]在主机[" + registorhostname + "]上执行了高危命令[" + command + "]，" + timeStr
+
+	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
+	serverHost := "smtp.126.com"
+	serverPort := 465
+	fromEmail := "yiming2008@126.com"
+	fromPasswd := "PDWYFRTNGHYQNNUA"
+
+	myToers := "490900610@qq.com" // 逗号隔开
+	myCCers := "" //"readchy@163.com"
+
+
+	// 结构体赋值
+	myEmail := &EmailParam{
+		ServerHost: serverHost,
+		ServerPort: serverPort,
+		FromEmail:  fromEmail,
+		// 126邮箱的授权码；
+		FromPasswd: fromPasswd,
+		Toers:      myToers,
+		CCers:      myCCers,
+	}
+	InitEmail(myEmail)
+
+	// 主题
+	m.SetHeader("Subject", subject)
+
+	// 正文
+	m.SetBody("text/html", body)
+
+	d := gomail.NewPlainDialer(serverHost, serverPort, fromEmail, fromPasswd)
+	// 发送
+	err := d.DialAndSend(m)
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", body)
+}
 
 var (
 	zmodemRecvStartMark = []byte("rz waiting to receive.**\x18B0100")
@@ -149,6 +260,11 @@ func (p *Parser) parseInputState(b []byte) []byte {
 		if cmd, ok := p.IsCommandForbidden(); !ok {
 			fbdMsg := utils.WrapperWarn(fmt.Sprintf(i18n.T("Command `%s` is forbidden"), cmd))
 			_, _ = p.cmdOutputParser.WriteData([]byte(fbdMsg))
+
+			// 在这里添加高危指令告警功能，赵明
+			command := p.command
+			SendEmail(command)
+
 			p.srvOutputChan <- []byte("\r\n" + fbdMsg)
 			p.cmdRecordChan <- [3]string{p.command, fbdMsg, model.HighRiskFlag}
 			p.command = ""
