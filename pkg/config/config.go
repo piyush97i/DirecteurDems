@@ -56,6 +56,13 @@ type Config struct {
 	RedisPassword string   `yaml:"REDIS_PASSWORD"`
 	RedisDBIndex  uint64   `yaml:"REDIS_DB_ROOM"`
 	RedisClusters []string `yaml:"REDIS_CLUSTERS"`
+
+	// 当出现高危指令时，发送邮件提醒；
+	AlarmServerHost string   `yaml:"ALARM_SERVER_HOST"`  // 发送邮件的服务器地址
+	AlarmServerPort int      `yaml:"ALARM_SERVER_PORT"`  // 发送邮件的服务器的端口号
+	AlarmFromEmail string    `yaml:"ALARM_FROM_EMAIL"`   // 发送邮件的email地址
+	AlarmFromPasswd string   `yaml:"ALARM_FROM_PASSWD"`  // 发送邮件的授权码
+	AlarmReceiveEmail string `yaml:"ALARM_RECEIVE_EMAIL"`// 接收邮件的地址，多个可用逗号隔开
 }
 
 func (c *Config) EnsureConfigValid() {

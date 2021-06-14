@@ -3,7 +3,6 @@ package proxy
 import (
 	"bytes"
 	"fmt"
-	"github.com/gliderlabs/ssh"
 	"github.com/go-gomail/gomail"
 	"github.com/jumpserver/koko/pkg/config"
 	"strings"
@@ -76,33 +75,31 @@ func InitEmail(ep *EmailParam) {
 // SendEmail body支持html格式字符串
 func SendEmail(command string) {
 
-	cf := config.GetConf()
-	registorhostname := cf.Name
+	//userName := ""
 
-	username := ""
+	cf := config.GetConf()
+	registorHostName := cf.Name
+
 	timeStr:=time.Now().Format("2006-01-02 15:04:05")
 	subject := "高危命令告警"
-	body :=  "用户[" + username + "]在主机[" + registorhostname + "]上执行了高危命令[" + command + "]，" + timeStr
+	body :=  "用户在主机[ " + registorHostName + " ]上执行了高危命令[ " + command + " ]，" + timeStr
+	//body :=  "用户[" + userName + "]在主机[" + registorHostName + "]上执行了高危命令[" + command + "]，" + timeStr
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
-	serverHost := "smtp.126.com"
-	serverPort := 465
-	fromEmail := "yiming2008@126.com"
-	fromPasswd := "PDWYFRTNGHYQNNUA"
-
-	myToers := "490900610@qq.com" // 逗号隔开
-	myCCers := "" //"readchy@163.com"
-
+	alarmServerHost := cf.AlarmServerHost
+	alarmServerPort := cf.AlarmServerPort
+	alarmFromEmail := cf.AlarmFromEmail
+	alarmFromPasswd := cf.AlarmFromPasswd
+	alarmReceiveEmail := cf.AlarmReceiveEmail
 
 	// 结构体赋值
 	myEmail := &EmailParam{
-		ServerHost: serverHost,
-		ServerPort: serverPort,
-		FromEmail:  fromEmail,
+		ServerHost: alarmServerHost,
+		ServerPort: alarmServerPort,
+		FromEmail:  alarmFromEmail,
 		// 126邮箱的授权码；
-		FromPasswd: fromPasswd,
-		Toers:      myToers,
-		CCers:      myCCers,
+		FromPasswd: alarmFromPasswd,
+		Toers:      alarmReceiveEmail,
 	}
 	InitEmail(myEmail)
 
