@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/go-gomail/gomail"
 	"github.com/jumpserver/koko/pkg/config"
+	"net"
 	"strings"
 	"sync"
 	"time"
+	"errors"
 
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
@@ -72,8 +74,60 @@ func InitEmail(ep *EmailParam) {
 	m.SetAddressHeader("From", fromEmail, "")
 }
 
+// 获取本机IP地址
+func externalIP() (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagUp == 0 {
+			continue // interface down
+		}
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue // loopback interface
+		}
+		addrs, err := iface.Addrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addrs {
+			ip := getIpFromAddr(addr)
+			if ip == nil {
+				continue
+			}
+			return ip, nil
+		}
+	}
+	return nil, errors.New("connected to the network?")
+}
+func getIpFromAddr(addr net.Addr) net.IP {
+	var ip net.IP
+	switch v := addr.(type) {
+	case *net.IPNet:
+		ip = v.IP
+	case *net.IPAddr:
+		ip = v.IP
+	}
+	if ip == nil || ip.IsLoopback() {
+		return nil
+	}
+	ip = ip.To4()
+	if ip == nil {
+		return nil // not an ipv4 address
+	}
+
+	return ip
+}
 // SendEmail body支持html格式字符串
 func SendEmail(command string) {
+
+	// 获取IP地址
+	ip, getIpErr := externalIP()
+	if getIpErr != nil {
+		ip.String()
+		logger.Info("获取本机IP地址时，出现了错误 = %s" , getIpErr)
+	}
 
 	//userName := ""
 
@@ -82,7 +136,7 @@ func SendEmail(command string) {
 
 	timeStr:=time.Now().Format("2006-01-02 15:04:05")
 	subject := "高危命令告警"
-	body :=  "用户在主机[ " + registorHostName + " ]上执行了高危命令[ " + command + " ]，" + timeStr
+	body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
 	//body :=  "用户[" + userName + "]在主机[" + registorHostName + "]上执行了高危命令[" + command + "]，" + timeStr
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
@@ -101,20 +155,24 @@ func SendEmail(command string) {
 		FromPasswd: alarmFromPasswd,
 		Toers:      alarmReceiveEmail,
 	}
-	InitEmail(myEmail)
 
-	// 主题
-	m.SetHeader("Subject", subject)
+	defer func(){ // 必须要先声明defer，否则不能捕获到panic异常
+		InitEmail(myEmail)
 
-	// 正文
-	m.SetBody("text/html", body)
+		// 主题
+		m.SetHeader("Subject", subject)
 
-	d := gomail.NewPlainDialer(serverHost, serverPort, fromEmail, fromPasswd)
-	// 发送
-	err := d.DialAndSend(m)
-	if err != nil {
-		panic(err)
-	}
+		// 正文
+		m.SetBody("text/html", body)
+
+		d := gomail.NewPlainDialer(serverHost, serverPort, fromEmail, fromPasswd)
+		// 发送
+		err := d.DialAndSend(m)
+		if err != nil {
+			logger.Info("发送邮件 \"" + body + " \" 失败，因为出现了错误 = %s" , err)
+		}
+	}()
+
 
 	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", body)
 }
