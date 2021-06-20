@@ -136,8 +136,11 @@ func SendEmail(command string) {
 
 	timeStr:=time.Now().Format("2006-01-02 15:04:05")
 	subject := "高危命令告警"
-	body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
-	//body :=  "用户[" + userName + "]在主机[" + registorHostName + "]上执行了高危命令[" + command + "]，" + timeStr
+	body :=  "高危指令：" + command + "<br>" +
+		     "资产：" + registorHostName + "——" + ip.String()  + "<br>" +
+		     "时间：" + timeStr
+
+		//body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
 	alarmServerHost := cf.AlarmServerHost
