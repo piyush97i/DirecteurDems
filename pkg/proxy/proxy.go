@@ -371,7 +371,8 @@ func (p *ProxyServer) Proxy() {
 		return
 	}
 	logger.Infof("Conn[%s] getting srv conn success", p.UserConn.ID())
-	_ = sw.Bridge(p.UserConn, srvConn)
+	_ = sw.BridgeProxyServer(p, p.UserConn, srvConn)
+	//_ = sw.Bridge(p.UserConn, srvConn)
 	logger.Infof("Conn[%s] end session %s bridge", p.UserConn.ID(), sw.ID)
 }
 

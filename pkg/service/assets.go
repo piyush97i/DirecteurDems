@@ -73,10 +73,13 @@ func GetSystemUserFilterRules(systemUserID string) (rules []model.SystemUserFilt
 	    }
 	]`*/
 	Url := fmt.Sprintf(SystemUserCmdFilterRulesListURL, systemUserID)
+	logger.Info("通过接口地址 %s 来获取数据库中配置好的高危命令规则", Url)
 
 	_, err = authClient.Get(Url, &rules)
 	if err != nil {
 		logger.Errorf("Get system user %s filter rule failed", systemUserID)
+	} else {
+		logger.Info("通过接口地址 %s 来获取数据库中配置好的高危命令规则 = %s", Url, rules)
 	}
 	return
 }

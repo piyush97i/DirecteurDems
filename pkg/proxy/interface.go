@@ -14,6 +14,7 @@ type proxyEngine interface {
 
 type ParseEngine interface {
 	ParseStream(userInChan, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte)
+	ParseStreamProxyServer(userInChan, srvInChan <-chan []byte,proxyServer *ProxyServer) (userOut, srvOut <-chan []byte)
 
 	Close()
 

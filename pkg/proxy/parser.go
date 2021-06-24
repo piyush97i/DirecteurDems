@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/go-gomail/gomail"
 	"github.com/jumpserver/koko/pkg/config"
@@ -9,14 +10,12 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"errors"
 
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/utils"
 )
-
 
 type EmailParam struct {
 	// ServerHost 邮箱服务器地址，如腾讯企业邮箱为smtp.exmail.qq.com
@@ -119,28 +118,32 @@ func getIpFromAddr(addr net.Addr) net.IP {
 
 	return ip
 }
+
 // SendEmail body支持html格式字符串
-func SendEmail(command string) {
+func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 
 	// 获取IP地址
-	ip, getIpErr := externalIP()
-	if getIpErr != nil {
-		ip.String()
-		logger.Info("获取本机IP地址时，出现了错误 = %s" , getIpErr)
-	}
+	//ip, getIpErr := externalIP()
+	//if getIpErr != nil {
+	//	ip.String()
+	//	logger.Info("获取本机IP地址时，出现了错误 = %s", getIpErr)
+	//}
 
-	//userName := ""
+	hostIp := proxyServer.Asset.Hostname
+	Platform := proxyServer.Asset.Platform
 
 	cf := config.GetConf()
 	registorHostName := cf.Name
 
-	timeStr:=time.Now().Format("2006-01-02 15:04:05")
+	timeStr := time.Now().Format("2006-01-02 15:04:05")
 	subject := "高危命令告警"
-	body :=  "高危指令：" + command + "<br>" +
-		     "资产：" + registorHostName + "——" + ip.String()  + "<br>" +
-		     "时间：" + timeStr
+	body := "高危指令：" + command + "<br>" +
+		"资产IP地址hostIp：" + hostIp + "<br>" +
+		"资产系统类型：" + Platform + "<br>" +
+		"资产注册名称：" + registorHostName + "<br>" +
+		"时间：" + timeStr
 
-		//body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
+	//body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
 	alarmServerHost := cf.AlarmServerHost
@@ -159,7 +162,7 @@ func SendEmail(command string) {
 		Toers:      alarmReceiveEmail,
 	}
 
-	defer func(){ // 必须要先声明defer，否则不能捕获到panic异常
+	defer func() { // 必须要先声明defer，否则不能捕获到panic异常
 		InitEmail(myEmail)
 
 		// 主题
@@ -172,10 +175,69 @@ func SendEmail(command string) {
 		// 发送
 		err := d.DialAndSend(m)
 		if err != nil {
-			logger.Info("发送邮件 \"" + body + " \" 失败，因为出现了错误 = %s" , err)
+			logger.Info("发送邮件 \""+body+" \" 失败，因为出现了错误 = %s", err)
 		}
 	}()
 
+	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", body)
+}
+
+// SendEmail body支持html格式字符串
+func SendEmail(command string) {
+
+	// 获取IP地址
+	ip, getIpErr := externalIP()
+	if getIpErr != nil {
+		ip.String()
+		logger.Info("获取本机IP地址时，出现了错误 = %s", getIpErr)
+	}
+
+	//userName := ""
+
+	cf := config.GetConf()
+	registorHostName := cf.Name
+
+	timeStr := time.Now().Format("2006-01-02 15:04:05")
+	subject := "高危命令告警"
+	body := "高危指令：" + command + "<br>" +
+		"资产：" + registorHostName + "——" + ip.String() + "<br>" +
+		"时间：" + timeStr
+
+	//body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
+
+	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
+	alarmServerHost := cf.AlarmServerHost
+	alarmServerPort := cf.AlarmServerPort
+	alarmFromEmail := cf.AlarmFromEmail
+	alarmFromPasswd := cf.AlarmFromPasswd
+	alarmReceiveEmail := cf.AlarmReceiveEmail
+
+	// 结构体赋值
+	myEmail := &EmailParam{
+		ServerHost: alarmServerHost,
+		ServerPort: alarmServerPort,
+		FromEmail:  alarmFromEmail,
+		// 126邮箱的授权码；
+		FromPasswd: alarmFromPasswd,
+		Toers:      alarmReceiveEmail,
+	}
+
+	defer func() { // 必须要先声明defer，否则不能捕获到panic异常
+		InitEmail(myEmail)
+
+		// 主题
+		m.SetHeader("Subject", subject)
+
+		// 正文
+		m.SetBody("text/html", body)
+
+		d := gomail.NewPlainDialer(serverHost, serverPort, fromEmail, fromPasswd)
+		// 发送
+		err := d.DialAndSend(m)
+		if err != nil {
+			logger.Info("发送邮件 \""+body+" \" 失败，因为出现了错误 = %s", err)
+		}
+	}()
 
 	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", body)
 }
@@ -299,6 +361,51 @@ func (p *Parser) ParseStream(userInChan, srvInChan <-chan []byte) (userOut, srvO
 	}()
 	return p.userOutputChan, p.srvOutputChan
 }
+func (p *Parser) ParseStreamProxyServer(userInChan, srvInChan <-chan []byte, proxyServer *ProxyServer) (userOut, srvOut <-chan []byte) {
+
+	p.userOutputChan = make(chan []byte, 1)
+	p.srvOutputChan = make(chan []byte, 1)
+	logger.Infof("Session %s: Parser start", p.id)
+	go func() {
+		defer func() {
+			// 会话结束，结算命令结果
+			p.sendCommandRecord()
+			close(p.cmdRecordChan)
+			close(p.userOutputChan)
+			close(p.srvOutputChan)
+			logger.Infof("Session %s: Parser routine done", p.id)
+		}()
+		for {
+			select {
+			case <-p.closed:
+				return
+			case b, ok := <-userInChan:
+				if !ok {
+					return
+				}
+				b = p.ParseUserInputProxyServer(b, proxyServer)
+				select {
+				case <-p.closed:
+					return
+				case p.userOutputChan <- b:
+				}
+
+			case b, ok := <-srvInChan:
+				if !ok {
+					return
+				}
+				b = p.ParseServerOutput(b)
+				select {
+				case <-p.closed:
+					return
+				case p.srvOutputChan <- b:
+				}
+
+			}
+		}
+	}()
+	return p.userOutputChan, p.srvOutputChan
+}
 
 // Todo: parseMultipleInput 依然存在问题
 
@@ -339,6 +446,43 @@ func (p *Parser) parseInputState(b []byte) []byte {
 	return b
 }
 
+// parseInputState 切换用户输入状态, 并结算命令和结果
+func (p *Parser) parseInputStateProxyServer(b []byte, proxyServer *ProxyServer) []byte {
+	if p.inVimState || p.zmodemState != "" {
+		return b
+	}
+	p.inputPreState = p.inputState
+
+	if bytes.Contains(b, charEnter) {
+		// 连续输入enter key, 结算上一条可能存在的命令结果
+		p.sendCommandRecord()
+		p.inputState = false
+		// 用户输入了Enter，开始结算命令
+		p.parseCmdInput()
+		if cmd, ok := p.IsCommandForbidden(); !ok {
+			fbdMsg := utils.WrapperWarn(fmt.Sprintf(i18n.T("Command `%s` is forbidden"), cmd))
+			_, _ = p.cmdOutputParser.WriteData([]byte(fbdMsg))
+
+			// 在这里添加高危指令告警功能，赵明
+			command := p.command
+			SendEmailProxyServer(command, proxyServer)
+
+			p.srvOutputChan <- []byte("\r\n" + fbdMsg)
+			p.cmdRecordChan <- [3]string{p.command, fbdMsg, model.HighRiskFlag}
+			p.command = ""
+			p.output = ""
+			return []byte{utils.CharCleanLine, '\r'}
+		}
+	} else {
+		p.inputState = true
+		// 用户又开始输入，并上次不处于输入状态，开始结算上次命令的结果
+		if !p.inputPreState {
+			p.sendCommandRecord()
+		}
+	}
+	return b
+}
+
 // parseCmdInput 解析命令的输入
 func (p *Parser) parseCmdInput() {
 	p.command = p.cmdInputParser.Parse()
@@ -357,6 +501,15 @@ func (p *Parser) ParseUserInput(b []byte) []byte {
 		p.inputInitial = true
 	})
 	nb := p.parseInputState(b)
+	return nb
+} // ParseUserInput 解析用户的输入
+func (p *Parser) ParseUserInputProxyServer(b []byte, proxyServer *ProxyServer) []byte {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.once.Do(func() {
+		p.inputInitial = true
+	})
+	nb := p.parseInputStateProxyServer(b, proxyServer)
 	return nb
 }
 

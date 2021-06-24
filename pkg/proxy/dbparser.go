@@ -105,6 +105,51 @@ func (p *DBParser) ParseStream(userInChan, srvInChan <-chan []byte) (userOut, sr
 	}()
 	return p.userOutputChan, p.srvOutputChan
 }
+func (p *DBParser) ParseStreamProxyServer(userInChan, srvInChan <-chan []byte,proxyServer *ProxyServer) (userOut, srvOut <-chan []byte) {
+
+	p.userOutputChan = make(chan []byte, 1)
+	p.srvOutputChan = make(chan []byte, 1)
+	logger.Infof("DB Session %s: Parser start", p.id)
+	go func() {
+		defer func() {
+			// 会话结束，结算命令结果
+			p.sendCommandRecord()
+			close(p.cmdRecordChan)
+			close(p.userOutputChan)
+			close(p.srvOutputChan)
+			logger.Infof("DB Session %s: Parser routine done", p.id)
+		}()
+		for {
+			select {
+			case <-p.closed:
+				return
+			case b, ok := <-userInChan:
+				if !ok {
+					return
+				}
+				b = p.ParseUserInput(b)
+				select {
+				case <-p.closed:
+					return
+				case p.userOutputChan <- b:
+				}
+
+			case b, ok := <-srvInChan:
+				if !ok {
+					return
+				}
+				b = p.ParseServerOutput(b)
+				select {
+				case <-p.closed:
+					return
+				case p.srvOutputChan <- b:
+				}
+
+			}
+		}
+	}()
+	return p.userOutputChan, p.srvOutputChan
+}
 
 // parseInputState 切换用户输入状态, 并结算命令和结果
 func (p *DBParser) parseInputState(b []byte) []byte {

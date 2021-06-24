@@ -233,6 +233,124 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 		lastActiveTime = time.Now()
 	}
 }
+func (s *commonSwitch) BridgeProxyServer(proxyServer *ProxyServer, userConn UserConnection, srvConn srvconn.ServerConnection) (err error) {
+	var (
+		//ParseEngine         Parser
+		replayRecorder ReplyRecorder
+
+		userInChan chan []byte
+		srvInChan  chan []byte
+		done       chan struct{}
+	)
+	s.isConnected = true
+	//ParseEngine = newParser(s.ID)
+	parser := s.p.NewParser(s)
+	logger.Infof("Conn[%s] create ParseEngine success", userConn.ID())
+	replayRecorder = NewReplyRecord(s.ID)
+	logger.Infof("Conn[%s] create replay success", userConn.ID())
+	userInChan = make(chan []byte, 1)
+	srvInChan = make(chan []byte, 1)
+	done = make(chan struct{})
+
+	// 处理数据流
+	userOutChan, srvOutChan := parser.ParseStreamProxyServer(userInChan, srvInChan, proxyServer)
+	//userOutChan, srvOutChan := parser.ParseStream(userInChan, srvInChan)
+
+	defer func() {
+		close(done)
+		_ = userConn.Close()
+		_ = srvConn.Close()
+		// 关闭parser
+		parser.Close()
+		// 关闭录像
+		replayRecorder.End()
+		s.postBridge()
+	}()
+
+	// 记录命令
+	cmdChan := parser.CommandRecordChan()
+	go s.recordCommand(cmdChan)
+	go s.LoopReadFromSrv(done, srvConn, srvInChan)
+	go s.LoopReadFromUser(done, userConn, userInChan)
+	winCh := userConn.WinCh()
+	maxIdleTime := s.MaxIdleTime * time.Minute
+	lastActiveTime := time.Now()
+	tick := time.NewTicker(30 * time.Second)
+	defer tick.Stop()
+	ex := exchange.GetExchange()
+	roomChan := make(chan model.RoomMessage)
+	sub := ex.CreateRoom(roomChan, s.ID)
+	logger.Infof("Conn[%s] create exchange room success", userConn.ID())
+	defer ex.DestroyRoom(sub)
+	go s.loopReadFromRoom(done, roomChan, userInChan)
+	defer sub.Publish(model.RoomMessage{Event: model.ExitEvent})
+	logger.Infof("Conn[%s] start session %s bridge loop", userConn.ID(), s.ID)
+	for {
+		select {
+		// 检测是否超过最大空闲时间
+		case <-tick.C:
+			now := time.Now()
+			outTime := lastActiveTime.Add(maxIdleTime)
+			if !now.After(outTime) {
+				continue
+			}
+			msg := fmt.Sprintf(i18n.T("Connect idle more than %d minutes, disconnect"), s.MaxIdleTime)
+			logger.Infof("Session[%s] idle more than %d minutes, disconnect", s.ID, s.MaxIdleTime)
+			msg = utils.WrapperWarn(msg)
+			utils.IgnoreErrWriteString(userConn, "\n\r"+msg)
+			sub.Publish(model.RoomMessage{Event: model.MaxIdleEvent, Body: []byte("\n\r" + msg)})
+			logger.Debugf("Session[%s] published MaxIdleEvent", s.ID)
+			return
+		// 手动结束
+		case <-s.ctx.Done():
+			msg := i18n.T("Terminated by administrator")
+			msg = utils.WrapperWarn(msg)
+			logger.Infof("Session[%s]: %s", s.ID, msg)
+			utils.IgnoreErrWriteString(userConn, "\n\r"+msg)
+			sub.Publish(model.RoomMessage{Event: model.AdminTerminateEvent, Body: []byte("\n\r" + msg)})
+			logger.Debugf("Session[%s] published AdminTerminateEvent", s.ID)
+			return
+		// 监控窗口大小变化
+		case win, ok := <-winCh:
+			if !ok {
+				return
+			}
+			_ = srvConn.SetWinSize(win.Width, win.Height)
+			logger.Infof("Session[%s] Window server change: %d*%d",
+				s.ID, win.Width, win.Height)
+			p, _ := json.Marshal(win)
+			msg := model.RoomMessage{
+				Event: model.WindowsEvent,
+				Body:  p,
+			}
+			sub.Publish(msg)
+		// 经过parse处理的server数据，发给user
+		case p, ok := <-srvOutChan:
+			if !ok {
+				return
+			}
+			nw, _ := userConn.Write(p)
+			if parser.NeedRecord() {
+				replayRecorder.Record(p[:nw])
+			}
+			msg := model.RoomMessage{
+				Event: model.DataEvent,
+				Body:  p[:nw],
+			}
+			sub.Publish(msg)
+		// 经过parse处理的user数据，发给server
+		case p, ok := <-userOutChan:
+			if !ok {
+				return
+			}
+			_, err = srvConn.Write(p)
+			sub.Publish(model.RoomMessage{
+				Event: model.PingEvent,
+			})
+		}
+		lastActiveTime = time.Now()
+	}
+}
 
 func (s *commonSwitch) LoopReadFromUser(done chan struct{}, userConn UserConnection, inChan chan<- []byte) {
 	defer logger.Infof("Session[%s] read from user done", s.ID)
