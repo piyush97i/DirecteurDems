@@ -92,6 +92,7 @@ func PushSessionReplay(sessionID, gZipFile string) (err error) {
 }
 
 func PushSessionCommand(commands []*model.Command) (err error) {
+	logger.Info(" ########## 开始执行terminal.go文件的PushSessionCommand方法，url = %s",SessionCommandURL)
 	_, err = authClient.Post(SessionCommandURL, commands, nil)
 	if err != nil {
 		logger.Error(err)

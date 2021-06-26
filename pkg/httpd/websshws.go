@@ -41,14 +41,14 @@ func OnNamespaceConnected(ns *neffos.NSConn, msg neffos.Message) error {
 		logger.Warnf("Namespace Connect Event: ws %s already connected.", ns.Conn.ID())
 		return nil
 	}
-	logger.Debugf("Namespace Connect Event: ws %s first connected", ns.Conn.ID())
+	logger.Debugf("文件[websshws.go]方法[OnNamespaceConnected]，Namespace Connect Event: ws %s first connected", ns.Conn.ID())
 
 	userConn, err := NewUserWebsocketConnWithSession(ns)
 	if err != nil {
 		logger.Errorf("Ws %s check session failed, may use token", ns.Conn.ID())
 		return nil
 	}
-	logger.Infof("Accepted user %s connect ssh ws", userConn.User.Username)
+	logger.Infof("文件[websshws.go]方法[OnNamespaceConnected]Accepted user %s connect ssh ws", userConn.User.Username)
 	websocketManager.AddUserCon(ns.Conn.ID(), userConn)
 	go userConn.loopHandler()
 	return nil
@@ -71,6 +71,7 @@ func OnNamespaceDisconnect(c *neffos.NSConn, msg neffos.Message) (err error) {
 
 // OnHostHandler 当用户连接Host时触发
 func OnHostHandler(ns *neffos.NSConn, msg neffos.Message) (err error) {
+	logger.Info("执行文件websshws.go中的OnHostHandler()方法-----当用户连接Host时触发。")
 	websocketID := ns.Conn.ID()
 	logger.Debugf("Ws %s fire host event", websocketID)
 	userConn, ok := websocketManager.GetUserCon(websocketID)
@@ -86,6 +87,7 @@ func OnHostHandler(ns *neffos.NSConn, msg neffos.Message) (err error) {
 		logger.Errorf("Host Event: ws %s unmarshal msg err: %s", websocketID, err)
 		return err
 	}
+	logger.Info("执行文件websshws.go中的OnHostHandler()方法-----当用户连接Host时触发。", message)
 	win := ssh.Window{Height: 24, Width: 80}
 	assetID := message.Uuid
 	systemUserID := message.UserID
@@ -169,13 +171,16 @@ func OnHostHandler(ns *neffos.NSConn, msg neffos.Message) (err error) {
 		}
 	default:
 		proxySrv = &proxy.ProxyServer{
-			UserConn: client, User: userConn.User,
-			Asset: &asset, SystemUser: &systemUser,
+			UserConn:   client,
+			User:       userConn.User,
+			Asset:      &asset,
+			SystemUser: &systemUser,
 		}
 	}
 	go func() {
 		logger.Infof("Ws %s add Conn[%s] to proxy", websocketID, client.Uuid)
 		userConn.AddClient(client.Uuid, client)
+		logger.Info("执行文件websshws.go中的OnHostHandler()方法里调用Proxy()方法。")
 		proxySrv.Proxy()
 		logoutMsg := LogoutMsg{Room: roomID}
 		userConn.SendLogoutEvent(neffos.Marshal(logoutMsg))
@@ -230,8 +235,10 @@ func OnTokenHandler(ns *neffos.NSConn, msg neffos.Message) (err error) {
 	websocketManager.AddUserCon(ns.Conn.ID(), userConn)
 	go userConn.loopHandler()
 	hostMsg := HostMsg{
-		Uuid: tokenUser.AssetID, UserID: tokenUser.SystemUserID,
-		Size: message.Size, Secret: secret,
+		Uuid: tokenUser.AssetID,
+		UserID: tokenUser.SystemUserID,
+		Size: message.Size,
+		Secret: secret,
 	}
 	hostWsMsg := neffos.Message{
 		Body: neffos.Marshal(hostMsg),

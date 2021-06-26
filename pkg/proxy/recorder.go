@@ -16,6 +16,7 @@ import (
 )
 
 func NewCommandRecorder(sid string) (recorder *CommandRecorder) {
+	logger.Info(" ########## 开始执行recorder.go文件的NewCommandRecorder方法.")
 	recorder = &CommandRecorder{sessionID: sid}
 	recorder.initial()
 	return recorder
@@ -36,6 +37,7 @@ type CommandRecorder struct {
 }
 
 func (c *CommandRecorder) initial() {
+	logger.Info(" ########## 开始执行recorder.go文件的initial方法.")
 	c.queue = make(chan *model.Command, 10)
 	c.storage = NewCommandStorage()
 	c.closed = make(chan struct{})
@@ -56,6 +58,7 @@ func (c *CommandRecorder) End() {
 }
 
 func (c *CommandRecorder) record() {
+	logger.Info(" ########## 开始执行recorder.go文件的record方法.")
 	cmdList := make([]*model.Command, 0, 10)
 	maxRetry := 0
 	logger.Infof("Session %s: Command recorder start", c.sessionID)
@@ -81,6 +84,7 @@ func (c *CommandRecorder) record() {
 				continue
 			}
 		}
+		logger.Info(" ########## 开始执行recorder.go文件的record方法.")
 		err := c.storage.BulkSave(cmdList)
 		if err == nil {
 			cmdList = cmdList[:0]

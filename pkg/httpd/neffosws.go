@@ -61,7 +61,7 @@ func neffosOnConnect(c *neffos.Conn) error {
 	if c.WasReconnected() {
 		logger.Debugf("ws %s reconnected, with tries: %d", c.ID(), c.ReconnectTries)
 	} else {
-		logger.Debugf("A new ws %s arrive", c.ID())
+		logger.Debugf("文件[neffosws.go]方法[neffosOnConnect]A new ws %s arrive", c.ID())
 	}
 	return nil
 }

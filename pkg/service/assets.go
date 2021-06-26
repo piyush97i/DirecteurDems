@@ -95,6 +95,9 @@ func GetSystemUser(systemUserID string) (info model.SystemUser) {
 
 func GetAsset(assetID string) (asset model.Asset) {
 	Url := fmt.Sprintf(AssetDetailURL, assetID)
+
+	logger.Info("执行文件assets.go中的GetAsset()方法，拼接好的Url = ", Url)
+
 	_, err := authClient.Get(Url, &asset)
 	if err != nil {
 		logger.Errorf("Get Asset %s failed: %s", assetID, err)

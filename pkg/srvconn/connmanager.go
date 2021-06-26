@@ -343,12 +343,12 @@ func newClient(asset *model.Asset, systemUser *model.SystemUser, timeout time.Du
 	return client, nil
 }
 
-func NewClient(user *model.User, asset *model.Asset, systemUser *model.SystemUser, timeout time.Duration,
-	useCache bool) (client *sshClient, err error) {
-
+func NewClient(user *model.User, asset *model.Asset, systemUser *model.SystemUser, timeout time.Duration, useCache bool) (client *sshClient, err error) {
 	client, err = newClient(asset, systemUser, timeout)
 	if err == nil && useCache {
 		key := MakeReuseSSHClientKey(user, asset, systemUser)
+		msg := fmt.Sprintf("在文件connmanager.go中的NewClient方法里，根据 user = [%s], asset = [%s],systemUser = [%s] ,生成key = [%s]", user, asset, systemUser, key)
+		logger.Info(msg)
 		setClientCache(key, client)
 	}
 	return

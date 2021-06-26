@@ -1,6 +1,7 @@
 package recorderstorage
 
 import (
+	"github.com/jumpserver/koko/pkg/logger"
 	"path/filepath"
 	"strings"
 
@@ -13,6 +14,7 @@ type ServerStorage struct {
 }
 
 func (s ServerStorage) BulkSave(commands []*model.Command) (err error) {
+	logger.Info(" ########## 开始执行server.go文件的BulkSave方法.")
 	return service.PushSessionCommand(commands)
 }
 

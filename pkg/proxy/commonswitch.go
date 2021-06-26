@@ -65,6 +65,7 @@ func (s *commonSwitch) SessionID() string {
 }
 
 func (s *commonSwitch) recordCommand(cmdRecordChan chan [3]string) {
+	logger.Info(" ########## 开始执行commonswitch.go文件的recordCommand方法.")
 	// 命令记录
 	cmdRecorder := NewCommandRecorder(s.ID)
 	for command := range cmdRecordChan {
@@ -269,6 +270,7 @@ func (s *commonSwitch) BridgeProxyServer(proxyServer *ProxyServer, userConn User
 
 	// 记录命令
 	cmdChan := parser.CommandRecordChan()
+	logger.Info(" ########## 开始执行commonswitch.go文件的BridgeProxyServer方法.")
 	go s.recordCommand(cmdChan)
 	go s.LoopReadFromSrv(done, srvConn, srvInChan)
 	go s.LoopReadFromUser(done, userConn, userInChan)

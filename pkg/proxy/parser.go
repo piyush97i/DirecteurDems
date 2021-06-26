@@ -122,30 +122,35 @@ func getIpFromAddr(addr net.Addr) net.IP {
 // SendEmail body支持html格式字符串
 func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 
-	// 获取IP地址
-	//ip, getIpErr := externalIP()
-	//if getIpErr != nil {
-	//	ip.String()
-	//	logger.Info("获取本机IP地址时，出现了错误 = %s", getIpErr)
-	//}
-
 	hostIp := proxyServer.Asset.Hostname
 	Platform := proxyServer.Asset.Platform
+	protocol := proxyServer.Asset.Protocols
+	userName := proxyServer.User.Username
+	name := proxyServer.User.Name
+	systemUserName := proxyServer.SystemUser.Name
+
+	remoteAddr := proxyServer.UserConn.RemoteAddr()
 
 	cf := config.GetConf()
 	registorHostName := cf.Name
 
 	timeStr := time.Now().Format("2006-01-02 15:04:05")
 	subject := "高危命令告警"
-	body := "高危指令：" + command + "<br>" +
-		"资产IP地址hostIp：" + hostIp + "<br>" +
-		"资产系统类型：" + Platform + "<br>" +
-		"资产注册名称：" + registorHostName + "<br>" +
-		"时间：" + timeStr
+	body :=
+		"操作时间：" + timeStr + "<br>" +
+			"运维用户：" + name + "(" + userName + ")" + "<br>" +
+			"源地址：" + remoteAddr + "<br>" +
+			"运维对象：" + hostIp + "<br>" +
+			"管理方式：" + "%s" + "<br>" +
+			"事件描述：" + "执行了高危命令：" + command + "<br>" +
+			"触发策略：" + "执行了高危命令" + "<br>" +
+			"登录运维对象账号：" + systemUserName + "<br>" +
+			"运维对象系统类型：" + Platform + "<br>" +
+			"运维对象注册名称：" + registorHostName + "<br>"
 
-	//body :=  "用户在主机[ " + registorHostName + "——" + ip.String() + " ]上执行了高危命令[ " + command + " ]，" + timeStr
+	msg := fmt.Sprintf(body, protocol)
 
-	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", body)
+	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg)
 	alarmServerHost := cf.AlarmServerHost
 	alarmServerPort := cf.AlarmServerPort
 	alarmFromEmail := cf.AlarmFromEmail
@@ -169,17 +174,17 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 		m.SetHeader("Subject", subject)
 
 		// 正文
-		m.SetBody("text/html", body)
+		m.SetBody("text/html", msg)
 
 		d := gomail.NewPlainDialer(serverHost, serverPort, fromEmail, fromPasswd)
 		// 发送
 		err := d.DialAndSend(m)
 		if err != nil {
-			logger.Info("发送邮件 \""+body+" \" 失败，因为出现了错误 = %s", err)
+			logger.Info("发送邮件 \"" + msg + " \" 失败，因为出现了错误 = %s", err)
 		}
 	}()
 
-	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", body)
+	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
 }
 
 // SendEmail body支持html格式字符串
@@ -617,6 +622,7 @@ func (p *Parser) sendCommandRecord() {
 	if p.command != "" {
 		p.parseCmdOutput()
 		p.cmdRecordChan <- [3]string{p.command, p.output, model.LessRiskFlag}
+		//p.cmdRecordChan <- [3]string{p.command, p.output, model.LessRiskFlag}
 		p.command = ""
 		p.output = ""
 	}
