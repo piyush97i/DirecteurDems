@@ -112,9 +112,9 @@ func (p *ProxyServer) validatePermission() bool {
 
 // getSSHConn 获取ssh连接
 func (p *ProxyServer) getSSHConn() (srvConn *srvconn.ServerSSHConnection, err error) {
+	logger.Info("执行文件proxy.go中的getSSHConn()方法----获取SSH连接。")
 	conf := config.GetConf()
-	newClient, err := srvconn.NewClient(p.User, p.Asset, p.SystemUser,
-		conf.SSHTimeout*time.Second, conf.ReuseConnection)
+	newClient, err := srvconn.NewClient(p.User, p.Asset, p.SystemUser, conf.SSHTimeout*time.Second, conf.ReuseConnection)
 	if err != nil {
 		logger.Errorf("Conn[%s] create ssh client (%s@%s) err: %s",
 			p.UserConn.ID(), p.SystemUser.Name, p.Asset.Hostname, err)
@@ -215,6 +215,8 @@ func (p *ProxyServer) getTelnetConn() (srvConn *srvconn.ServerTelnetConnection, 
 
 // getServerConn 获取获取server连接
 func (p *ProxyServer) getServerConn() (srvConn srvconn.ServerConnection, err error) {
+	msg := fmt.Sprintf("执行文件proxy.go中的getServerConn()方法----获取server连接，当前连接使用的协议是[%s]。", p.SystemUser.Protocol)
+	logger.Info(msg)
 	if p.cacheSSHConnection != nil {
 		return p.cacheSSHConnection, nil
 	}
@@ -344,6 +346,7 @@ func (p *ProxyServer) getAssetCharset() string {
 
 // Proxy 代理
 func (p *ProxyServer) Proxy() {
+	logger.Info("执行文件proxy.go中的Proxy()方法。")
 	if !p.preCheckRequisite() {
 		return
 	}
@@ -370,9 +373,16 @@ func (p *ProxyServer) Proxy() {
 		return
 	}
 	logger.Infof("Conn[%s] getting srv conn success", p.UserConn.ID())
+	msg := fmt.Sprintf("在文件proxy.go中的Proxy()方法里，调用BridgeProxyServer()方法，[%s][%s][%s]", p.SystemUser.Username, p.SystemUser.Name, p.SystemUser.Protocol)
+	logger.Info(msg)
 	_ = sw.BridgeProxyServer(p, p.UserConn, srvConn)
 	//_ = sw.Bridge(p.UserConn, srvConn)
 	logger.Infof("Conn[%s] end session %s bridge", p.UserConn.ID(), sw.ID)
+}
+
+// 获取ProxyServer信息
+func (p *ProxyServer) getProxyServer() *ProxyServer {
+	return p
 }
 
 func (p *ProxyServer) MapData(s *commonSwitch) map[string]interface{} {
@@ -413,8 +423,15 @@ func (p *ProxyServer) NewParser(s *commonSwitch) ParseEngine {
 	return &shellParser
 }
 
-func (p *ProxyServer) GenerateRecordCommand(s *commonSwitch, input, output string,
-	riskLevel int64) *model.Command {
+func (p *ProxyServer) GenerateRecordCommand(s *commonSwitch, input, output string, riskLevel int64) *model.Command {
+	var event_msg = ""
+	if riskLevel == 5{
+		event_msg_tp := "执行了高危指令"
+		event_msg = event_msg_tp
+	}else{
+		event_msg_tp := "执行了指令"
+		event_msg = event_msg_tp
+	}
 	return &model.Command{
 		SessionID:  s.ID,
 		OrgID:      p.Asset.OrgID,
@@ -425,5 +442,10 @@ func (p *ProxyServer) GenerateRecordCommand(s *commonSwitch, input, output strin
 		SystemUser: p.SystemUser.Username,
 		Timestamp:  time.Now().Unix(),
 		RiskLevel:  riskLevel,
+		RemoteAddress: p.UserConn.RemoteAddr(),
+		AssetOperatingSystemType: p.Asset.Platform,
+		AssetRegisteredName: p.User.Name + "(" + p.User.Username + ")",
+		ManageType: fmt.Sprintf("%s", p.Asset.Protocols),
+		EventMsg: event_msg,
 	}
 }
