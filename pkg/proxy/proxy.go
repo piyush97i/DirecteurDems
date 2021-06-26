@@ -144,8 +144,7 @@ func (p *ProxyServer) getSSHConn() (srvConn *srvconn.ServerSSHConnection, err er
 			p.UserConn.ID(), p.SystemUser.Name, p.Asset.Hostname, err)
 		return nil, err
 	}
-	logger.Infof("User %s ssh client(%s@%s) start shell success.",
-		p.User.Name, p.SystemUser.Name, p.Asset.Hostname)
+	logger.Infof("User %s ssh client(%s@%s) start shell success.", p.User.Name, p.SystemUser.Name, p.Asset.Hostname)
 	return
 }
 
