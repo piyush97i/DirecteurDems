@@ -95,6 +95,8 @@ type Asset struct {
 	OrgID     string   `json:"org_id"`
 	OrgName   string   `json:"org_name"`
 	Platform  string   `json:"platform,omitempty"`
+	// 新增访问资产的白名单
+  Sourceaddresswhitelist  string   `json:"source_address_whitelist"`
 }
 
 func (a *Asset) ProtocolPort(protocol string) int {

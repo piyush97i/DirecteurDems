@@ -329,3 +329,8 @@ msgstr ""
 #: pkg/proxy/proxy.go:404
 msgid "Create session failed"
 msgstr ""
+
+#. i18n.T
+#: pkg/proxy/proxy.go:366
+msgid "source ip <`%s`> is not in asset <`%s`> whitelist"
+msgstr ""

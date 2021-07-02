@@ -346,7 +346,30 @@ func (p *ProxyServer) getAssetCharset() string {
 
 // Proxy 代理
 func (p *ProxyServer) Proxy() {
-	logger.Info("执行文件proxy.go中的Proxy()方法。")
+
+  logger.Info("执行文件proxy.go中的Proxy()方法。")
+
+  // 获取远程地址
+  remoteAddr := p.UserConn.RemoteAddr()
+  // 获取资产的白名单列表
+  sourceAddressWhitelistStr := p.Asset.Sourceaddresswhitelist
+
+  logger.Info("执行文件proxy.go中的Proxy()方法，在这里判断用户登录堡垒机用的电脑的IP地址(" + remoteAddr + ")是否在该资产(" + p.Asset.IP + ")的白名单内 = " + sourceAddressWhitelistStr)
+
+  compareResultBool := strings.Contains(sourceAddressWhitelistStr,remoteAddr)
+
+  if true == compareResultBool{
+    logger.Info("执行文件proxy.go中的Proxy()方法，资产(" + p.Asset.IP + ")的白名单内 = " + sourceAddressWhitelistStr + "，含有地址 = " , compareResultBool)
+  }else{
+    logger.Info("执行文件proxy.go中的Proxy()方法，资产(" + p.Asset.IP + ")的白名单内 = " + sourceAddressWhitelistStr + "，不含有地址 = " , compareResultBool)
+
+    fbdMsg := utils.WrapperWarn(fmt.Sprintf(i18n.T("source ip <`%s`> is not in asset <`%s`> whitelist"), remoteAddr,p.Asset.IP))
+    utils.IgnoreErrWriteString(p.UserConn, fbdMsg)
+    logger.Info(fbdMsg)
+    logger.Errorf(fbdMsg)
+    return
+  }
+
 	if !p.preCheckRequisite() {
 		return
 	}

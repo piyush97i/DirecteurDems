@@ -353,3 +353,8 @@ msgstr "连接API服务失败"
 #, fuzzy
 msgid "Create session failed"
 msgstr "创建会话失败"
+
+#. i18n.T
+#: pkg/proxy/proxy.go:366
+msgid "source ip <`%s`> is not in asset <`%s`> whitelist"
+msgstr "源IP <`%s`> 不在资产 <`%s`> 的白名单内"
