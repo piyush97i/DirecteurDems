@@ -241,6 +241,7 @@ func (p *DBProxyServer) GenerateRecordCommand(s *commonSwitch, input, output str
 func (p *DBProxyServer) NewParser(s *commonSwitch) ParseEngine {
 	dbParser := newDBParser(s.ID)
 	msg := i18n.T("Create database session failed")
+	// 获取禁止执行高危命令的规则
 	if cmdRules, err := service.GetSystemUserFilterRules(p.SystemUser.ID); err == nil {
 		dbParser.SetCMDFilterRules(cmdRules)
 	} else {
