@@ -13,8 +13,7 @@ ENV GOARCH=amd64
 ENV CGO_ENABLED=0
 
 COPY . .
-RUN wget "$KUBECTLDOWNLOADURL" -O kubectl.tar.gz && tar -xzf kubectl.tar.gz \
-    && chmod +x kubectl && mv kubectl rawkubectl
+RUN wget "$KUBECTLDOWNLOADURL" -O kubectl.tar.gz && tar -xzf kubectl.tar.gz && chmod +x kubectl && mv kubectl rawkubectl
 RUN wget "$ALIASESURL" -O kubectl_aliases.tar.gz && tar -xzvf kubectl_aliases.tar.gz
 RUN cd utils && sh -ixeu build.sh
 
