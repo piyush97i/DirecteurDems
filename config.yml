@@ -2,11 +2,12 @@
 # NAME: {{ Hostname }}
 
 # Jumpserver项目的url, api请求注册会使用
-CORE_HOST: http://127.0.0.1:8080
+CORE_HOST: http://172.17.0.1:8080
 
 # Bootstrap Token, 预共享秘钥, 用来注册coco使用的service account和terminal
 # 请和jumpserver 配置文件中保持一致，注册完成后可以删除
-BOOTSTRAP_TOKEN: <PleasgeChangeSameWithJumpserver>
+BOOTSTRAP_TOKEN: oyo0GLwmAWhEdBSs
+
 
 # 启动时绑定的ip, 默认 0.0.0.0
 # BIND_HOST: 0.0.0.0
@@ -15,7 +16,7 @@ BOOTSTRAP_TOKEN: <PleasgeChangeSameWithJumpserver>
 # SSHD_PORT: 2222
 
 # 监听的HTTP/WS端口号，默认5000
-# HTTPD_PORT: 5000
+HTTPD_PORT: 5000
 
 # 项目使用的ACCESS KEY, 默认会注册,并保存到 ACCESS_KEY_STORE中,
 # 如果有需求, 可以写到配置文件中, 格式 access_key_id:access_key_secret
@@ -66,15 +67,13 @@ BOOTSTRAP_TOKEN: <PleasgeChangeSameWithJumpserver>
 # REDIS_PASSWORD:
 # REDIS_CLUSTERS:
 # REDIS_DB_ROOM:
-
-# 当出现高危指令时，发送邮件提醒；
 # 发送邮件的服务器地址
 ALARM_SERVER_HOST: "smtp.126.com"
 # 发送邮件的服务器的端口号
 ALARM_SERVER_PORT: 465
 # 发送邮件的email地址
-ALARM_FROM_EMAIL: "yiming2008@126.com"
+ALARM_FROM_EMAIL: "y26.com"
 # 发送邮件的授权码
-ALARM_FROM_PASSWD: "PDWYFRTNGHYQNNUA"
+ALARM_FROM_PASSWD: "PHYQNNUA"
 # 接收邮件的地址，多个可用逗号隔开
-ALARM_RECEIVE_EMAIL: "490900610@qq.com"
+ALARM_RECEIVE_EMAIL: "0@qq.com"
