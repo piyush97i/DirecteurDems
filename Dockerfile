@@ -18,4 +18,4 @@ RUN export GOPROXY=https://goproxy.io \
 
 RUN chmod 755 entrypoint.sh
 
-#CMD [ "./entrypoint.sh" ]
+CMD [ "./entrypoint.sh" ]
