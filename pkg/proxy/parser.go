@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-gomail/gomail"
-	"github.com/jumpserver/koko/pkg/config"
-	"net"
-	"strings"
+  "github.com/jumpserver/koko/pkg/common"
+  "github.com/jumpserver/koko/pkg/config"
+  "io/ioutil"
+  "net"
+  "net/http"
+  "strings"
 	"sync"
 	"time"
 
@@ -157,6 +160,9 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	alarmFromPasswd := cf.AlarmFromPasswd
 	alarmReceiveEmail := cf.AlarmReceiveEmail
 
+	alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
+	logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
+
 	// 结构体赋值
 	myEmail := &EmailParam{
 		ServerHost: alarmServerHost,
@@ -185,6 +191,20 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	}()
 
 	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
+}
+
+func getAlarmEmailInfo(token string) (res string, err error) {
+  // 获取告警邮件的地址信息
+  Url := "/api/v1/settings/setting/getAlarmEmailAdress?token=" + token
+  client := &http.Client{}
+  resp, err := client.Get(Url)
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    logger.Error("根据地址 = " + Url + "获取告警邮件地址信息时，出现了异常。",err)
+  }
+  logger.Info("根据地址 = " + Url + "获取告警邮件地址信息 = " + string(body))
+  return
 }
 
 // SendEmail body支持html格式字符串
