@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-gomail/gomail"
-  "github.com/jumpserver/koko/pkg/common"
+  _ "github.com/jumpserver/koko/pkg/common"
   "github.com/jumpserver/koko/pkg/config"
   "io/ioutil"
   "net"
