@@ -160,7 +160,12 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	alarmFromPasswd := cf.AlarmFromPasswd
 	alarmReceiveEmail := cf.AlarmReceiveEmail
 
+	fmt.Println("开始获取告警邮件地址信息。")
+  fmt.Println("开始获取告警邮件地址信息。")
+  fmt.Println("开始获取告警邮件地址信息。")
+	logger.Info("开始获取告警邮件地址信息。")
 	alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
+  fmt.Println("获取到的告警邮件地址是 " + alarmEmailInfo)
 	logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
 
 	// 结构体赋值
@@ -201,8 +206,10 @@ func getAlarmEmailInfo(token string) (res string, err error) {
   defer resp.Body.Close()
   body, err := ioutil.ReadAll(resp.Body)
   if err != nil {
+    fmt.Println("根据地址 = " + Url + "获取告警邮件地址信息时，出现了异常。",err)
     logger.Error("根据地址 = " + Url + "获取告警邮件地址信息时，出现了异常。",err)
   }
+  fmt.Println("根据地址 = " + Url + "获取告警邮件地址信息 = " + string(body))
   logger.Info("根据地址 = " + Url + "获取告警邮件地址信息 = " + string(body))
   return
 }
