@@ -164,9 +164,9 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
   fmt.Println("开始获取告警邮件地址信息。")
   fmt.Println("开始获取告警邮件地址信息。")
 	logger.Info("开始获取告警邮件地址信息。")
-	alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
-  fmt.Println("获取到的告警邮件地址是 " + alarmEmailInfo)
-	logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
+	//alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
+  //fmt.Println("获取到的告警邮件地址是 " + alarmEmailInfo)
+	//logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
 
 	// 结构体赋值
 	myEmail := &EmailParam{
