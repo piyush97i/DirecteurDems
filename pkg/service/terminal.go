@@ -17,6 +17,9 @@ func RegisterTerminal(name, token, comment string) (res model.Terminal) {
     logger.Info("向core注册失败了，token=", token)
     logger.Info("向core注册失败了，token=", fmt.Sprintf("BootstrapToken %s", token))
     logger.Error(err)
+  }else{
+    logger.Info("向core注册成功，传递的参数 = ", data)
+    logger.Info("向core注册成功，token=", token)
   }
   return
 }
