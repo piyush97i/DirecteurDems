@@ -2,14 +2,17 @@ package proxy
 
 import (
 	"bytes"
-	"errors"
+  "encoding/json"
+  "errors"
 	"fmt"
 	"github.com/go-gomail/gomail"
+  "github.com/jumpserver/koko/pkg/common"
   _ "github.com/jumpserver/koko/pkg/common"
   "github.com/jumpserver/koko/pkg/config"
   "io/ioutil"
   "net"
   "net/http"
+  "strconv"
   "strings"
 	"sync"
 	"time"
@@ -154,16 +157,29 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	msg := fmt.Sprintf(body, protocol)
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg)
-	alarmServerHost := cf.AlarmServerHost
-	alarmServerPort := cf.AlarmServerPort
-	alarmFromEmail := cf.AlarmFromEmail
-	alarmFromPasswd := cf.AlarmFromPasswd
-	alarmReceiveEmail := cf.AlarmReceiveEmail
+	//alarmServerHost := cf.AlarmServerHost
+	//alarmServerPort := cf.AlarmServerPort
+	//alarmFromEmail := cf.AlarmFromEmail
+	//alarmFromPasswd := cf.AlarmFromPasswd
+	//alarmReceiveEmail := cf.AlarmReceiveEmail
 
-	fmt.Println("开始获取告警邮件地址信息。")
-  fmt.Println("开始获取告警邮件地址信息。")
-  fmt.Println("开始获取告警邮件地址信息。")
-	logger.Info("开始获取告警邮件地址信息。")
+  emailBdy := GetData()
+  emailBdyToMap := JsonToMap(emailBdy)
+  if(0 != len(emailBdyToMap)){
+    fmt.Println(emailBdyToMap["recieve_account"])
+    fmt.Println(emailBdyToMap["send_account"])
+    fmt.Println(emailBdyToMap["smtp_host"])
+    fmt.Println(emailBdyToMap["smtp_passwd"])
+    fmt.Println(emailBdyToMap["smtp_port"])
+
+  }
+  alarmServerHost := emailBdyToMap["smtp_host"]
+  alarmServerPort,_ := strconv.Atoi(emailBdyToMap["smtp_port"])
+  alarmFromEmail := emailBdyToMap["send_account"]
+  alarmFromPasswd := emailBdyToMap["smtp_passwd"]
+  alarmReceiveEmail := emailBdyToMap["recieve_account"]
+
+
 	//alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
   //fmt.Println("获取到的告警邮件地址是 " + alarmEmailInfo)
 	//logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
@@ -177,6 +193,10 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 		FromPasswd: alarmFromPasswd,
 		Toers:      alarmReceiveEmail,
 	}
+
+	jsonEmailBytes,_:= json.Marshal(myEmail)
+	fmt.Println("组装好的邮件地址信息结构体 = " + string(jsonEmailBytes))
+	logger.Info("组装好的邮件地址信息结构体 = " + string(jsonEmailBytes))
 
 	defer func() { // 必须要先声明defer，否则不能捕获到panic异常
 		InitEmail(myEmail)
@@ -196,6 +216,32 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	}()
 
 	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
+}
+
+func GetData()(str string) {
+  var authClient = common.NewClient(30, "")
+  var returnBody map[string]string
+  //client := &http.Client{}
+  url := "/api/v1/settings/setting/getAlarmEmailAdress/"
+  resp, err := authClient.Get(url,&returnBody)
+  defer resp.Body.Close()
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    fmt.Println("根据URL = " + url + "获取到的告警邮件地址信息时，出错了 = ",err)
+    logger.Error("根据URL = " + url + "获取到的告警邮件地址信息时，出错了 = ",err)
+  }
+  fmt.Println("根据URL = " + url + "获取到的告警邮件地址信息 = " + string(body))
+  logger.Info("根据URL = " + url + "获取到的告警邮件地址信息 = " + string(body))
+  return string(body)
+}
+
+func JsonToMap(str string) map[string]string {
+  var tempMap map[string]string
+  err := json.Unmarshal([]byte(str), &tempMap)
+  if err != nil {
+    panic(err)
+  }
+  return tempMap
 }
 
 func getAlarmEmailInfo(token string) (res string, err error) {
