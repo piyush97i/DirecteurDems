@@ -1,26 +1,26 @@
 package proxy
 
 import (
-	"bytes"
+  "bytes"
   "encoding/json"
   "errors"
-	"fmt"
-	"github.com/go-gomail/gomail"
-  "github.com/jumpserver/koko/pkg/common"
+  "fmt"
+  "github.com/go-gomail/gomail"
   _ "github.com/jumpserver/koko/pkg/common"
   "github.com/jumpserver/koko/pkg/config"
-  "io/ioutil"
+  "github.com/jumpserver/koko/pkg/service"
   "net"
-  "net/http"
   "strconv"
-  "strings"
-	"sync"
-	"time"
 
-	"github.com/jumpserver/koko/pkg/i18n"
-	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
-	"github.com/jumpserver/koko/pkg/utils"
+  //"strconv"
+  "strings"
+  "sync"
+  "time"
+
+  "github.com/jumpserver/koko/pkg/i18n"
+  "github.com/jumpserver/koko/pkg/logger"
+  "github.com/jumpserver/koko/pkg/model"
+  "github.com/jumpserver/koko/pkg/utils"
 )
 
 type EmailParam struct {
@@ -157,32 +157,43 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	msg := fmt.Sprintf(body, protocol)
 
 	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg)
-	//alarmServerHost := cf.AlarmServerHost
-	//alarmServerPort := cf.AlarmServerPort
-	//alarmFromEmail := cf.AlarmFromEmail
-	//alarmFromPasswd := cf.AlarmFromPasswd
-	//alarmReceiveEmail := cf.AlarmReceiveEmail
+	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg,subject)
+	//alarmServerHost1 := cf.AlarmServerHost
+	//alarmServerPort1 := cf.AlarmServerPort
+	//alarmFromEmail1 := cf.AlarmFromEmail
+	//alarmFromPasswd1 := cf.AlarmFromPasswd
+	//alarmReceiveEmail1 := cf.AlarmReceiveEmail
 
-  emailBdy := GetData()
-  emailBdyToMap := JsonToMap(emailBdy)
-  if(0 != len(emailBdyToMap)){
-    fmt.Println(emailBdyToMap["recieve_account"])
-    fmt.Println(emailBdyToMap["send_account"])
-    fmt.Println(emailBdyToMap["smtp_host"])
-    fmt.Println(emailBdyToMap["smtp_passwd"])
-    fmt.Println(emailBdyToMap["smtp_port"])
+  emailBdyToMap := service.GetData()
 
-  }
+  fmt.Println("组装好的邮件地址信息结构体 = " , emailBdyToMap)
+  logger.Info("组装好的邮件地址信息结构体 = " , emailBdyToMap)
+
   alarmServerHost := emailBdyToMap["smtp_host"]
   alarmServerPort,_ := strconv.Atoi(emailBdyToMap["smtp_port"])
   alarmFromEmail := emailBdyToMap["send_account"]
   alarmFromPasswd := emailBdyToMap["smtp_passwd"]
   alarmReceiveEmail := emailBdyToMap["recieve_account"]
 
-
-	//alarmEmailInfo, _ := getAlarmEmailInfo(cf.BootstrapToken)
-  //fmt.Println("获取到的告警邮件地址是 " + alarmEmailInfo)
-	//logger.Info("获取到的告警邮件地址是 " + alarmEmailInfo)
+  //if(alarmServerHost1 == alarmServerHost){
+  //  fmt.Println("email的host地址相等 = ",alarmServerHost1)
+  //}
+  //if(alarmFromEmail1 == alarmFromEmail){
+  //  fmt.Println("email的发送邮件地址相等 = ",alarmFromEmail)
+  //}
+  //if(alarmFromPasswd1 == alarmFromPasswd){
+  //  fmt.Println("email的密码地址相等 = ",alarmFromPasswd)
+  //}else{
+  //  fmt.Println("email的密码地址不相等 = " + alarmFromPasswd1 + "，" + alarmFromPasswd)
+  //}
+  //if(alarmServerPort1 == alarmServerPort){
+  //  fmt.Println("email的端口相等 = ",alarmServerPort1)
+  //}
+  //if(alarmReceiveEmail1 == alarmReceiveEmail){
+  //  fmt.Println("email的接收邮件的地址相等 = ",alarmReceiveEmail1)
+  //}else{
+  //  fmt.Println("email的接收邮件的地址不相等 = " + alarmReceiveEmail1 + "，" + alarmReceiveEmail)
+  //}
 
 	// 结构体赋值
 	myEmail := &EmailParam{
@@ -216,48 +227,6 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 	}()
 
 	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
-}
-
-func GetData()(str string) {
-  var authClient = common.NewClient(30, "")
-  var returnBody map[string]string
-  //client := &http.Client{}
-  url := "/api/v1/settings/setting/getAlarmEmailAdress/"
-  resp, err := authClient.Get(url,&returnBody)
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    fmt.Println("根据URL = " + url + "获取到的告警邮件地址信息时，出错了 = ",err)
-    logger.Error("根据URL = " + url + "获取到的告警邮件地址信息时，出错了 = ",err)
-  }
-  fmt.Println("根据URL = " + url + "获取到的告警邮件地址信息 = " + string(body))
-  logger.Info("根据URL = " + url + "获取到的告警邮件地址信息 = " + string(body))
-  return string(body)
-}
-
-func JsonToMap(str string) map[string]string {
-  var tempMap map[string]string
-  err := json.Unmarshal([]byte(str), &tempMap)
-  if err != nil {
-    panic(err)
-  }
-  return tempMap
-}
-
-func getAlarmEmailInfo(token string) (res string, err error) {
-  // 获取告警邮件的地址信息
-  Url := "/api/v1/settings/setting/getAlarmEmailAdress?token=" + token
-  client := &http.Client{}
-  resp, err := client.Get(Url)
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    fmt.Println("根据地址 = " + Url + "获取告警邮件地址信息时，出现了异常。",err)
-    logger.Error("根据地址 = " + Url + "获取告警邮件地址信息时，出现了异常。",err)
-  }
-  fmt.Println("根据地址 = " + Url + "获取告警邮件地址信息 = " + string(body))
-  logger.Info("根据地址 = " + Url + "获取告警邮件地址信息 = " + string(body))
-  return
 }
 
 // SendEmail body支持html格式字符串

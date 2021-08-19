@@ -15,6 +15,7 @@ require (
 	github.com/elastic/go-elasticsearch/v6 v6.8.5
 	github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 // indirect
 	github.com/gliderlabs/ssh v0.2.3-0.20190711180243-866d0ddf7991
+	github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df
 	github.com/gorilla/mux v1.7.2
 	github.com/gorilla/websocket v1.4.1
 	github.com/jarcoal/httpmock v1.0.4

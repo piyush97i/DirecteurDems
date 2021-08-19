@@ -196,6 +196,7 @@ func (c *Client) Do(method, url string, data, res interface{}, params ...map[str
 }
 
 func (c *Client) Get(url string, res interface{}, params ...map[string]string) (resp *http.Response, err error) {
+  fmt.Println("url = " + url + "，其基地址是" + c.BaseHost)
 	return c.Do("GET", url, nil, res, params...)
 }
 

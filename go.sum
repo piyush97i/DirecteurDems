@@ -26,6 +26,8 @@ github.com/elastic/go-elasticsearch/v6 v6.8.5 h1:U2HtkBseC1FNBmDr0TR2tKltL6FxoY+
 github.com/elastic/go-elasticsearch/v6 v6.8.5/go.mod h1:UwaDJsD3rWLM5rKNFzv9hgox93HoX8utj1kxD9aFUcI=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568 h1:BHsljHzVlRcyQhjrss6TZTdY2VfCqZPbv5k3iBFa2ZQ=
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
+github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df h1:Bao6dhmbTA1KFVxmJ6nBoMuOJit2yjEgLJpIMYpop0E=
+github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df/go.mod h1:GJr+FCSXshIwgHBtLglIg9M2l2kQSi6QjVAngtzI08Y=
 github.com/go-playground/form v3.1.4+incompatible h1:lvKiHVxE2WvzDIoyMnWcjyiBxKt2+uFJyZcPYWsLnjI=
 github.com/go-playground/form v3.1.4+incompatible/go.mod h1:lhcKXfTuhRtIZCIKUeJ0b5F207aeQCPbZU09ScKjwWg=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee h1:s+21KNqlpePfkah2I+gwHF8xmJWRjooY+5248k6m4A0=

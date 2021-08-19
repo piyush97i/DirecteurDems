@@ -1,6 +1,7 @@
 package service
 
 const (
+  GetAlertEmailAddressURL = "/api/v1/settings/setting/getAlarmEmailAdress/"     // 获取告警邮件的地址
 	UserProfileURL = "/api/v1/users/profile/"                            // 获取当前用户的基本信息
 	UserListURL    = "/api/v1/users/users/"                              // 用户列表地址
 	UserDetailURL  = "/api/v1/users/users/%s/"                           // 获取用户信息
