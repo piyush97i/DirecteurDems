@@ -156,8 +156,7 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 
 	msg := fmt.Sprintf(body, protocol)
 
-	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg)
-	logger.Infof("start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg,subject)
+	logger.Infof("方法SendEmailProxyServer()  start ########## 出现高危命令啦 %s，发送邮件给管理员。", msg)
 	//alarmServerHost1 := cf.AlarmServerHost
 	//alarmServerPort1 := cf.AlarmServerPort
 	//alarmFromEmail1 := cf.AlarmFromEmail
@@ -174,6 +173,8 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
   alarmFromEmail := emailBdyToMap["send_account"]
   alarmFromPasswd := emailBdyToMap["smtp_passwd"]
   alarmReceiveEmail := emailBdyToMap["recieve_account"]
+
+  logger.Info("要发送的邮件 host = " + alarmServerHost + ",sendEmail = " + alarmFromEmail + ",passwd = " + alarmFromPasswd + "revieveEmail =" + alarmReceiveEmail)
 
   //if(alarmServerHost1 == alarmServerHost){
   //  fmt.Println("email的host地址相等 = ",alarmServerHost1)
@@ -226,7 +227,7 @@ func SendEmailProxyServer(command string, proxyServer *ProxyServer) {
 		}
 	}()
 
-	logger.Infof("end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
+	logger.Infof("方法SendEmailProxyServer()  end ######### 出现高危命令啦 %s，发送邮件给管理员。", msg)
 }
 
 // SendEmail body支持html格式字符串
