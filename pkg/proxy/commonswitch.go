@@ -73,6 +73,8 @@ func (s *commonSwitch) recordCommand(cmdRecordChan chan [3]string) {
 			continue
 		}
 		cmd := s.generateCommandResult(command)
+    logger.Info(" ########## 开始执行commonswitch.go文件的recordCommand方法。输出发送到堡垒机后端的命令：")
+		logger.Info(cmd)
 		cmdRecorder.Record(cmd)
 	}
 	// 关闭命令记录
