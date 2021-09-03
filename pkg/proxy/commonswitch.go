@@ -58,6 +58,7 @@ func (s *commonSwitch) Terminate() {
 	}
 	s.cancel()
 	logger.Infof("Session[%s] receive terminate task from admin", s.ID)
+  fmt.Println("Session[%s] receive terminate task from admin", s.ID)
 }
 
 func (s *commonSwitch) SessionID() string {
@@ -66,6 +67,7 @@ func (s *commonSwitch) SessionID() string {
 
 func (s *commonSwitch) recordCommand(cmdRecordChan chan [3]string) {
 	logger.Info(" ########## 开始执行commonswitch.go文件的recordCommand方法.")
+  fmt.Println(" ########## 开始执行commonswitch.go文件的recordCommand方法.")
 	// 命令记录
 	cmdRecorder := NewCommandRecorder(s.ID)
 	for command := range cmdRecordChan {
@@ -75,6 +77,10 @@ func (s *commonSwitch) recordCommand(cmdRecordChan chan [3]string) {
 		cmd := s.generateCommandResult(command)
     logger.Info(" ########## 开始执行commonswitch.go文件的recordCommand方法。输出发送到堡垒机后端的命令：")
 		logger.Info(cmd)
+
+		fmt.Println(" ########## 开始执行commonswitch.go文件的recordCommand方法。输出发送到堡垒机后端的命令：")
+    fmt.Println(cmd)
+
 		cmdRecorder.Record(cmd)
 	}
 	// 关闭命令记录
@@ -132,8 +138,10 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 	//ParseEngine = newParser(s.ID)
 	parser := s.p.NewParser(s)
 	logger.Infof("Conn[%s] create ParseEngine success", userConn.ID())
+  fmt.Println("Conn[%s] create ParseEngine success", userConn.ID())
 	replayRecorder = NewReplyRecord(s.ID)
 	logger.Infof("Conn[%s] create replay success", userConn.ID())
+  fmt.Println("Conn[%s] create replay success", userConn.ID())
 	userInChan = make(chan []byte, 1)
 	srvInChan = make(chan []byte, 1)
 	done = make(chan struct{})
@@ -166,10 +174,12 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 	roomChan := make(chan model.RoomMessage)
 	sub := ex.CreateRoom(roomChan, s.ID)
 	logger.Infof("Conn[%s] create exchange room success", userConn.ID())
+  fmt.Println("Conn[%s] create exchange room success", userConn.ID())
 	defer ex.DestroyRoom(sub)
 	go s.loopReadFromRoom(done, roomChan, userInChan)
 	defer sub.Publish(model.RoomMessage{Event: model.ExitEvent})
 	logger.Infof("Conn[%s] start session %s bridge loop", userConn.ID(), s.ID)
+  fmt.Println("Conn[%s] start session %s bridge loop", userConn.ID(), s.ID)
 	for {
 		select {
 		// 检测是否超过最大空闲时间
@@ -181,10 +191,12 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 			}
 			msg := fmt.Sprintf(i18n.T("Connect idle more than %d minutes, disconnect"), s.MaxIdleTime)
 			logger.Infof("Session[%s] idle more than %d minutes, disconnect", s.ID, s.MaxIdleTime)
+      fmt.Println("Session[%s] idle more than %d minutes, disconnect", s.ID, s.MaxIdleTime)
 			msg = utils.WrapperWarn(msg)
 			utils.IgnoreErrWriteString(userConn, "\n\r"+msg)
 			sub.Publish(model.RoomMessage{Event: model.MaxIdleEvent, Body: []byte("\n\r" + msg)})
 			logger.Debugf("Session[%s] published MaxIdleEvent", s.ID)
+      fmt.Println("Session[%s] published MaxIdleEvent", s.ID)
 			return
 		// 手动结束
 		case <-s.ctx.Done():
