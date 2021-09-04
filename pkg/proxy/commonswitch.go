@@ -79,9 +79,15 @@ func (s *commonSwitch) recordCommand(cmdRecordChan chan [3]string) {
 		logger.Info(cmd)
 
 		fmt.Println(" ########## 开始执行commonswitch.go文件的recordCommand方法。输出发送到堡垒机后端的命令：")
-    fmt.Println(cmd)
 
-		cmdRecorder.Record(cmd)
+    jsons, errs := json.Marshal(cmd) //转换成JSON返回的是byte[]
+    if errs != nil {
+      fmt.Println("将发送到堡垒机后端的命令转json时，出现了异常。")
+      fmt.Println(errs.Error())
+    }
+    fmt.Println(string(jsons)) //byte[]转换成string 输出
+
+    cmdRecorder.Record(cmd)
 	}
 	// 关闭命令记录
 	cmdRecorder.End()
